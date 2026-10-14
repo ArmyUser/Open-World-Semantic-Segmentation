@@ -48,7 +48,7 @@ flowchart LR
 └── README.md
 ```
 
-All code lives in `main.ipynb`. The CSV files hold the evaluation results, so you can inspect the tables (and run the notebook in "load results" mode) without re-running the expensive evaluation.
+All code lives in `main.ipynb`, which is saved with its outputs: results, training curves and qualitative figures are visible directly on GitHub. The CSV files hold the raw evaluation results reported below.
 
 ---
 
@@ -187,46 +187,32 @@ AUPR rises steadily from T = 0.5 to a peak at **T = 2.0**, then drops sharply. A
 
 ---
 
-## How to run
+## Reproducing the results
 
-The notebook is designed for **Google Colab with a GPU runtime**. The Boundary Suppression module allocates its kernels directly on CUDA.
+> **Note:** the trained weights and training logs are not distributed with this repository. `main.ipynb` is saved with all of its outputs, so every table, training curve and qualitative figure reported here can be viewed directly on GitHub without running anything.
 
-### 1. Open the notebook
+To reproduce the experiments from scratch you need **Google Colab with a GPU runtime** (the original runs used an NVIDIA T4). The Boundary Suppression module allocates its kernels directly on CUDA, so a CPU-only runtime will not work.
 
-Upload `main.ipynb` to Colab, or open it directly from GitHub (*File → Open notebook → GitHub*). Select a GPU runtime (*Runtime → Change runtime type → T4 GPU*).
-
-### 2. Set the execution flags
+### Execution flags
 
 The first code cell defines two flags, both `False` by default:
 
-| Flag | `True` | `False` (default) |
+| Flag | `True` | `False` |
 |---|---|---|
-| `TRAIN` | trains the three SegFormer runs from scratch | loads the pretrained checkpoints |
-| `EVALUATE` | recomputes all test metrics and grid searches (slow) | loads the results from the CSV files |
+| `TRAIN` | trains the three SegFormer runs and saves the checkpoints and CSV logs to Google Drive | loads the checkpoints from Google Drive |
+| `EVALUATE` | recomputes the per-class analysis, the test metrics and the energy grid searches (slow) | loads the results from the CSV files |
 
-With both flags `False`, the notebook reproduces all tables, training curves and qualitative figures from the saved checkpoints and results.
+### Steps
 
-### 3. Prepare Google Drive (only needed when using the pretrained weights)
+1. **Open the notebook** in Colab (*File → Open notebook → GitHub*, or upload `main.ipynb`) and select a GPU runtime (*Runtime → Change runtime type → T4 GPU*).
+2. **Train:** set `TRAIN = True` and run all cells. The notebook mounts Google Drive and downloads StreetHazards automatically (~11 GB). The best checkpoint of each run and its CSV logs are saved to `MyDrive/weights/`.
+3. **Evaluate:** set `TRAIN = False` and `EVALUATE = True`, then run all cells again. The checkpoints are now loaded from Drive (the `reweight` model, used for anomaly detection, is loaded only in this mode). The test metrics and grid searches are recomputed and saved as CSV files to `MyDrive/ml4cv-assignment-master/`.
 
-The notebook mounts Google Drive and expects this layout:
+### Notes
 
-```
-MyDrive/
-├── weights/
-│   ├── best-checkpoint_segformer_no_dice.ckpt
-│   ├── best-checkpoint_segformer_dice.ckpt
-│   ├── best-checkpoint_segformer_reweight.ckpt
-│   ├── logs_segformer_no_dice/lightning_logs/version_0/{metrics.csv, hparams.yaml}
-│   ├── logs_segformer_dice/lightning_logs/version_17/{metrics.csv, hparams.yaml}
-│   └── logs_segformer_reweight/lightning_logs/version_0/{metrics.csv, hparams.yaml}
-└── ml4cv-assignment-master/
-    ├── test_results.csv
-    ├── energy_grid_search.csv
-    ├── energy_grid_high_t.csv
-    └── energy_grid_high_t_2.csv
-```
-
-**Pretrained weights and training logs:** [download here (OneDrive)](https://liveunibo-my.sharepoint.com/:f:/g/personal/armando_renzullo_studio_unibo_it/IgAZmrb8xK9FTbLEPkmvxIPlATt_TT6dZ3UN6Jz580skSAI)
+- **Paths are hard-coded for Colab and Google Drive:** checkpoints and logs go in `/content/drive/MyDrive/weights`, result CSVs in `/content/drive/MyDrive/ml4cv-assignment-master/`. To view the result tables of this repository with `EVALUATE = False`, copy the CSV files into that folder.
+- **Training-curve cells read logs from fixed folders** (`lightning_logs/version_0`, and `version_17` for the Dice run). A fresh training creates `version_0`, so update the Dice-run path accordingly.
+- A fixed seed (`SEED = 7`) is used, but GPU non-determinism can make results differ slightly from the reported ones.
 
 ### Dependencies
 
